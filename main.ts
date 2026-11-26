@@ -11,8 +11,17 @@
 // umask the file would otherwise land unreadable. A read-back check
 // confirms the content matches and the mode bits are exactly 0644;
 // any failure exits non-zero before reporting success.
+//
+// Runs under plain Node (node:fs only).
 
-import { chmodSync, readFileSync, statSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname } from "node:path";
 
 const ENTRY =
   "The bug wasn’t in my code — it was in the spec, the tests, and, tragically, line 47 of the file I wrote.";
@@ -45,7 +54,11 @@ if (new TextDecoder("utf-8", { fatal: true }).decode(encoded) !== ENTRY) {
   fail("entry is not valid UTF-8");
 }
 
-await Bun.write(Bun.file(OUTPUT_PATH), encoded);
+// Create the output directory if it does not exist yet, so the
+// entrypoint works from a clean state with no /output directory.
+mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
+
+writeFileSync(OUTPUT_PATH, encoded);
 
 // The grader's output checker reads this file as a different
 // identity, so the file must be world-readable regardless of the
